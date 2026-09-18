@@ -29,6 +29,10 @@ l'edge TLS) ; c'est pourquoi la dev sert aussi en TLS.
 `app/` est un vrai clone git bind-monté : édite dedans, Apache sert directement.
 `app/`, `.env`, `db/import/*.sql` sont **gitignorés**.
 
+## Configuration
+
+- Changer la variable d'environnement mail_dev pour recevoir les mails envoyés par ODC
+
 ## Notes
 - Backpack **Pro** (payant) : `composer install` a besoin des identifiants
   `backpackforlaravel.com` (présents dans le vault). Sinon l'install échoue sur `backpack/pro`.
