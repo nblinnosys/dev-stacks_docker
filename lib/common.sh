@@ -10,7 +10,7 @@
 
 # Domaine de base pour le routage par Traefik (edge pfSense -> Traefik -> conteneurs).
 # Chaque site est publié en https://<sous-domaine>.$DEV_DOMAIN via le wildcard.
-: "${DEV_DOMAIN:=devmarek.innosys.fr}"
+: "${DEV_DOMAIN:=devnico.innosys.fr}"
 
 # Réseau Docker partagé entre Traefik et les sites.
 : "${DEV_TRAEFIK_NET:=dev_traefik}"
