@@ -1,0 +1,44 @@
+# =============================================================================
+# dev/shared-db/docker-compose.yml — base PARTAGÉE du pôle assurmix.
+#   Conteneur portomix_data (MySQL 5.7) sur le réseau externe `assurenv`.
+#   portomix / assurmix / crmix s'y connectent (DB_HOST=portomix_data).
+#   L'import des 7 bases (assurmix, assur*) est fait par le script d'init MySQL
+#   UNIQUEMENT au 1er démarrage (datadir vide) -> idempotent : si le volume existe
+#   déjà, aucun réimport. DB_* lues dans ./.env (généré par dev.sh).
+# =============================================================================
+name: inno-dev-shared-db
+
+services:
+  portomix_data:
+    image: mysql:5.7
+    container_name: portomix_data
+    hostname: portomix.data
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${DB_NAME}
+      MYSQL_USER: ${DB_USER}
+      MYSQL_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - shared_db_data:/var/lib/mysql
+      - ./db/init:/docker-entrypoint-initdb.d:ro   # 00_import.sh (1er init seulement)
+      - ./db/import:/dumps:ro                       # dumps <base>.sql posés manuellement
+    command: >
+      --sql-mode=NO_ENGINE_SUBSTITUTION
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-p${DB_ROOT_PASSWORD}"]
+      interval: 10s
+      timeout: 5s
+      retries: 60          # 1er import volumineux (~750 Mo) -> laisser le temps
+    ports:
+      - "3307:3306"        # accès direct (DBeaver…)
+    networks:
+      - assurenv
+
+networks:
+  assurenv:
+    name: assurenv         # réseau partagé -> portomix/assurmix/crmix s'y branchent
+
+volumes:
+  shared_db_data:
+    name: inno_dev_shared_db_data

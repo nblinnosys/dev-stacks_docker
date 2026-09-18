@@ -1,0 +1,41 @@
+# =============================================================================
+# dev/mga_vitrine/docker-compose.yml — vitrine MGA en DEV (PHP 7.4/Apache).
+#   PAS de base à elle : lit le schéma mga_vitrine du conteneur mga_db (dev/mga),
+#   via le réseau EXTERNE `mga`. -> LANCER dev/mga AVANT.
+# =============================================================================
+name: inno-dev-mga-vitrine
+
+services:
+  mga_vitrine_web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: inno_dev_mga_vitrine_web:latest
+    container_name: dev_mga_vitrine_web
+    hostname: mga-vitrine.web
+    restart: unless-stopped
+    volumes:
+      - ./app:/var/www/html/current
+      - ./mga_vitrine.vhost.conf:/etc/apache2/sites-enabled/mga_vitrine.conf:ro
+    ports:
+      - "8088:80"     # accès direct (debug)
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=dev_traefik"
+      - "traefik.http.routers.mgavitrine.rule=Host(`${MGAV_HOST}`)"
+      - "traefik.http.routers.mgavitrine.entrypoints=web"
+      - "traefik.http.routers.mgavitrine.middlewares=mgavitrine-proto"
+      - "traefik.http.middlewares.mgavitrine-proto.headers.customrequestheaders.X-Forwarded-Proto=https"
+      - "traefik.http.services.mgavitrine.loadbalancer.server.port=80"
+    networks:
+      - mga
+      - traefik
+
+networks:
+  # Réseau du rôle dev/mga (conteneur mga_db) — DOIT préexister (lancer mga avant).
+  mga:
+    name: mga
+    external: true
+  traefik:
+    name: dev_traefik
+    external: true

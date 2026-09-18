@@ -1,0 +1,77 @@
+# =============================================================================
+# dev/odc/docker-compose.yml — ODC en DEV (Laravel/Backpack + MySQL 8).
+#   PAS de releases, PAS de Traefik : ports publiés directement sur localhost.
+#   - odc_app : Apache/PHP 8.1, code = clone app/ bind-monté (édition live)
+#   - odc_db  : MySQL 8.0, dump importé par dev.sh (import-if-empty depuis /dumps)
+#   Les variables DB_* viennent du fichier .env généré par dev.sh (même dossier).
+# =============================================================================
+name: inno-dev-odc
+
+services:
+  odc_app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: inno_dev_odc:latest
+    container_name: dev_odc_app
+    hostname: odc.dev
+    restart: unless-stopped
+    depends_on:
+      odc_db:
+        condition: service_healthy
+    env_file: ./app/.env
+    volumes:
+      - ./app:/var/www/html/odc
+      - ./odc.vhost.conf:/etc/apache2/sites-available/odc.conf:ro
+    entrypoint: ["/bin/bash", "-c"]
+    command:
+      - "a2ensite odc.conf && exec apache2ctl -D FOREGROUND"
+    ports:
+      - "8086:80"     # accès direct http (debug)
+      - "8443:443"    # accès direct TLS auto-signé -> https://HOST:8443
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=dev_traefik"
+      - "traefik.http.routers.odc.rule=Host(`${ODC_HOST}`)"
+      - "traefik.http.routers.odc.entrypoints=web"
+      - "traefik.http.routers.odc.middlewares=odc-proto"
+      - "traefik.http.middlewares.odc-proto.headers.customrequestheaders.X-Forwarded-Proto=https"
+      - "traefik.http.services.odc.loadbalancer.server.port=80"
+    networks:
+      - odc
+      - traefik
+
+  odc_db:
+    image: mysql:8.0
+    container_name: dev_odc_db
+    hostname: odc.data
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${DB_DATABASE}
+      MYSQL_USER: ${DB_USERNAME}
+      MYSQL_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - odc_db_data:/var/lib/mysql
+      - ./db/import:/dumps:ro
+    command: --default-authentication-plugin=mysql_native_password --sql-mode=NO_ENGINE_SUBSTITUTION
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-p${DB_ROOT_PASSWORD}"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+    ports:
+      - "3316:3306"
+    networks:
+      - odc
+
+networks:
+  odc:
+    driver: bridge
+  traefik:
+    name: dev_traefik
+    external: true
+
+volumes:
+  odc_db_data:
+    name: inno_dev_odc_db_data

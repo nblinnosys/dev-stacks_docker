@@ -1,0 +1,33 @@
+# =============================================================================
+# .gitignore — dossier dev/ (stacks Docker locales)
+# But : ne JAMAIS committer de secrets, de données, ou de gros binaires.
+# =============================================================================
+
+# --- Secrets (PAT GitHub, mots de passe BDD…) — CRITIQUE ---------------------
+*/secrets.env
+*/.secrets.generated
+# (les modèles *.example RESTENT versionnés)
+
+# --- Fichiers générés au runtime --------------------------------------------
+*/.env
+
+# --- Clones applicatifs (récupérés par dev.sh, édition live) ----------------
+*/app/
+
+# --- Dumps / imports (données réelles, volumineux) — on ignore TOUT db/import
+*/db/import/*
+*.bak
+
+# --- Thèmes / archives (volumineux, hors dépôt applicatif) ------------------
+*.tar.gz
+*/theme/
+
+# --- Docs contenant des mots de passe en clair ------------------------------
+# (voir plus bas : soit on les garde hors dépôt, soit on committe une version
+#  ASSAINIE sans mots de passe)
+documentation.html
+DOCUMENTATION.md
+
+# --- Divers ------------------------------------------------------------------
+*.log
+.DS_Store

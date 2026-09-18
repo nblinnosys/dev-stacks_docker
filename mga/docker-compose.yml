@@ -1,0 +1,74 @@
+# =============================================================================
+# dev/mga/docker-compose.yml — MGA en DEV (PHP 8.2/Apache + MySQL 8 dédiée).
+#   PAS de releases, PAS de Traefik. Le réseau `mga` est nommé/possédé ici pour
+#   que dev/mga_vitrine puisse s'y brancher (external) et joindre mga_db.
+#   Variables DB_* lues dans ./.env (généré par dev.sh).
+# =============================================================================
+name: inno-dev-mga
+
+services:
+  mga_web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: inno_dev_mga_web:latest
+    container_name: dev_mga_web
+    hostname: mga.web
+    restart: unless-stopped
+    depends_on:
+      mga_db:
+        condition: service_healthy
+    env_file: ./.env
+    volumes:
+      - ./app:/var/www/html/current
+      - ./mga.vhost.conf:/etc/apache2/sites-enabled/mga.conf:ro
+    ports:
+      - "8087:80"     # accès direct (debug)
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=dev_traefik"
+      - "traefik.http.routers.mga.rule=Host(`${MGA_HOST}`)"
+      - "traefik.http.routers.mga.entrypoints=web"
+      - "traefik.http.routers.mga.middlewares=mga-proto"
+      - "traefik.http.middlewares.mga-proto.headers.customrequestheaders.X-Forwarded-Proto=https"
+      - "traefik.http.services.mga.loadbalancer.server.port=80"
+    networks:
+      - mga
+      - traefik
+
+  mga_db:
+    image: mysql:8.0
+    container_name: dev_mga_db
+    hostname: mga.db
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${DB_NAME}
+      MYSQL_USER: ${DB_USER}
+      MYSQL_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - mga_db_data:/var/lib/mysql
+      - ./db/import:/dumps:ro
+    command: >
+      --sql-mode=NO_ENGINE_SUBSTITUTION
+      --default-authentication-plugin=mysql_native_password
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-p${DB_ROOT_PASSWORD}"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+    ports:
+      - "3317:3306"
+    networks:
+      - mga
+
+networks:
+  mga:
+    name: mga          # réseau partagé -> mga_vitrine s'y branche (external)
+  traefik:
+    name: dev_traefik
+    external: true
+
+volumes:
+  mga_db_data:
+    name: inno_dev_mga_db_data

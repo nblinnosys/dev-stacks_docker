@@ -1,0 +1,83 @@
+# =============================================================================
+# dev/lagon/docker-compose.yml — Lagon7 en DEV (PHP 7.4/Apache + MySQL 8 dédiée).
+#   PAS de releases, PAS de Traefik. 2 sites (public + extranet) sur le port 8089.
+#   Base dédiée lagon_extranet (indépendante de mga en dev). DB_* lues dans ./.env.
+# =============================================================================
+name: inno-dev-lagon
+
+services:
+  lagon_web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: inno_dev_lagon_web:latest
+    container_name: dev_lagon_web
+    hostname: lagon.web
+    restart: unless-stopped
+    depends_on:
+      lagon_db:
+        condition: service_healthy
+    env_file: ./.env
+    volumes:
+      - ./app:/var/www/html/current
+      - ./lagon7.vhost.conf:/etc/apache2/sites-enabled/lagon7.conf:ro
+    ports:
+      - "8089:80"    # site public (accès direct debug)
+      - "8090:81"    # extranet (accès direct debug)
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=dev_traefik"
+      # Site public -> port 80
+      - "traefik.http.routers.lagon.rule=Host(`${LAGON_HOST}`)"
+      - "traefik.http.routers.lagon.entrypoints=web"
+      - "traefik.http.routers.lagon.service=lagon"
+      - "traefik.http.routers.lagon.middlewares=lagon-proto"
+      - "traefik.http.services.lagon.loadbalancer.server.port=80"
+      # Extranet -> port 81
+      - "traefik.http.routers.lagonext.rule=Host(`${LAGON_EXT_HOST}`)"
+      - "traefik.http.routers.lagonext.entrypoints=web"
+      - "traefik.http.routers.lagonext.service=lagonext"
+      - "traefik.http.routers.lagonext.middlewares=lagon-proto"
+      - "traefik.http.services.lagonext.loadbalancer.server.port=81"
+      # X-Forwarded-Proto https (edge) commun aux 2 routers
+      - "traefik.http.middlewares.lagon-proto.headers.customrequestheaders.X-Forwarded-Proto=https"
+    networks:
+      - lagon
+      - traefik
+
+  lagon_db:
+    image: mysql:8.0
+    container_name: dev_lagon_db
+    hostname: lagon.db
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${DB_NAME}
+      MYSQL_USER: ${DB_USER}
+      MYSQL_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - lagon_db_data:/var/lib/mysql
+      - ./db/import:/dumps:ro
+    command: >
+      --sql-mode=NO_ENGINE_SUBSTITUTION
+      --default-authentication-plugin=mysql_native_password
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-p${DB_ROOT_PASSWORD}"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+    ports:
+      - "3318:3306"
+    networks:
+      - lagon
+
+networks:
+  lagon:
+    name: lagon
+  traefik:
+    name: dev_traefik
+    external: true
+
+volumes:
+  lagon_db_data:
+    name: inno_dev_lagon_db_data

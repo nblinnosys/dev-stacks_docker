@@ -1,0 +1,43 @@
+# =============================================================================
+# dev/portomix/docker-compose.yml — Portomix en DEV (PHP 7.4/Apache).
+#   PAS de base à lui : se connecte à portomix_data (dev/shared-db) via le réseau
+#   externe `assurenv`. -> dev.sh démarre la base partagée au besoin (ensure_shared_db).
+# =============================================================================
+name: inno-dev-portomix
+
+services:
+  portomix_site:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: inno_dev_portomix_site:latest
+    container_name: dev_portomix_site
+    hostname: portomix.site
+    restart: unless-stopped
+    volumes:
+      - ./app:/var/www/html/portomix
+      - ./portomix.vhost.conf:/etc/apache2/sites-available/portomix.conf:ro
+    entrypoint: ["/bin/bash", "-c"]
+    command:
+      - "a2ensite portomix.conf && exec apache2ctl -D FOREGROUND"
+    ports:
+      - "8091:80"     # accès direct (debug)
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=dev_traefik"
+      - "traefik.http.routers.portomix.rule=Host(`${PORTOMIX_HOST}`)"
+      - "traefik.http.routers.portomix.entrypoints=web"
+      - "traefik.http.routers.portomix.middlewares=portomix-proto"
+      - "traefik.http.middlewares.portomix-proto.headers.customrequestheaders.X-Forwarded-Proto=https"
+      - "traefik.http.services.portomix.loadbalancer.server.port=80"
+    networks:
+      - assurenv
+      - traefik
+
+networks:
+  assurenv:
+    name: assurenv        # base partagée (dev/shared-db) — DOIT préexister
+    external: true
+  traefik:
+    name: dev_traefik
+    external: true

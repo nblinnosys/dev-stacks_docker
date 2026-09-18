@@ -1,0 +1,42 @@
+# =============================================================================
+# dev/crmix/docker-compose.yml — CRMIX en DEV (PHP 7.3/Apache, Symfony/InnoCore).
+#   PAS de base à lui : se connecte à portomix_data (dev/shared-db) via `assurenv`.
+#   Sous-domaine dédié (Traefik Host). Thème Metronic monté en RO.
+# =============================================================================
+name: inno-dev-crmix
+
+services:
+  crmix_site:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: inno_dev_crmix_site:latest
+    container_name: dev_crmix_site
+    hostname: crmix.site
+    restart: unless-stopped
+    command: ["apache2-foreground"]
+    volumes:
+      - ./app:/var/www/html/current
+      - ./theme/metronic_v4.7.5:/var/www/theme/metronic_v4.7.5:ro
+      - ./crmix.vhost.conf:/etc/apache2/sites-enabled/000-default.conf:ro
+    ports:
+      - "8093:80"     # accès direct (debug)
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=dev_traefik"
+      - "traefik.http.routers.crmix.rule=Host(`${CRMIX_HOST}`)"
+      - "traefik.http.routers.crmix.entrypoints=web"
+      - "traefik.http.routers.crmix.middlewares=crmix-proto"
+      - "traefik.http.middlewares.crmix-proto.headers.customrequestheaders.X-Forwarded-Proto=https"
+      - "traefik.http.services.crmix.loadbalancer.server.port=80"
+    networks:
+      - assurenv
+      - traefik
+
+networks:
+  assurenv:
+    name: assurenv        # base partagée (dev/shared-db) — DOIT préexister
+    external: true
+  traefik:
+    name: dev_traefik
+    external: true

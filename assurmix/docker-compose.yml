@@ -1,0 +1,44 @@
+# =============================================================================
+# dev/assurmix/docker-compose.yml — Assurmix en DEV (PHP 5.6/Apache, back-office /pro).
+#   PAS de base à lui : se connecte à portomix_data (dev/shared-db) via `assurenv`.
+#   Traefik ne route QUE /pro (priorité > portomix qui garde la racine).
+# =============================================================================
+name: inno-dev-assurmix
+
+services:
+  assurmix_site:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: inno_dev_assurmix_site:latest
+    container_name: dev_assurmix_site
+    hostname: assurmix.site
+    restart: unless-stopped
+    volumes:
+      - ./app:/var/www/html/assurmix
+      - ./assurmix.vhost.conf:/etc/apache2/sites-available/assurmix.conf:ro
+    entrypoint: ["/bin/bash", "-c"]
+    command:
+      - "a2ensite assurmix.conf && exec apache2ctl -D FOREGROUND"
+    ports:
+      - "8092:80"     # accès direct (debug) : http://<host>:8092/pro/
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=dev_traefik"
+      - "traefik.http.routers.assurmix.rule=Host(`${ASSURMIX_HOST}`) && PathPrefix(`/pro`)"
+      - "traefik.http.routers.assurmix.entrypoints=web"
+      - "traefik.http.routers.assurmix.priority=100"
+      - "traefik.http.routers.assurmix.middlewares=assurmix-proto"
+      - "traefik.http.middlewares.assurmix-proto.headers.customrequestheaders.X-Forwarded-Proto=https"
+      - "traefik.http.services.assurmix.loadbalancer.server.port=80"
+    networks:
+      - assurenv
+      - traefik
+
+networks:
+  assurenv:
+    name: assurenv        # base partagée (dev/shared-db) — DOIT préexister
+    external: true
+  traefik:
+    name: dev_traefik
+    external: true

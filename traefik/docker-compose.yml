@@ -1,0 +1,40 @@
+# =============================================================================
+# dev/traefik/docker-compose.yml — reverse proxy Traefik pour la dev.
+#   Reçoit le flux HTTP de pfSense/HAProxy (qui termine le TLS *.devnico.innosys.fr)
+#   et route par Host(...) vers les conteneurs site (label traefik.enable=true) sur
+#   le réseau partagé dev_traefik. Provider = Docker (labels).
+#   TLS terminé à l'edge -> Traefik n'écoute qu'en HTTP (entrypoint web :80).
+# =============================================================================
+name: inno-dev-traefik
+
+services:
+  traefik:
+    image: traefik:v3
+    container_name: dev_traefik
+    restart: unless-stopped
+    # Le client Docker interne de Traefik tombe sinon sur l'API 1.24 (trop vieille)
+    # face à un démon récent (min 1.40) -> on épingle une version d'API supportée.
+    environment:
+      - DOCKER_API_VERSION=1.44
+    command:
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--providers.docker.network=dev_traefik"
+      - "--entrypoints.web.address=:80"
+      # Dashboard (lecture) sur :8080 — pratique en dev, non exposé publiquement.
+      - "--api.dashboard=true"
+      - "--api.insecure=true"
+      - "--log.level=INFO"
+      - "--accesslog=true"
+    ports:
+      - "80:80"       # <- cible du backend HAProxy (VM VPN:80)
+      - "8080:8080"   # dashboard Traefik (http://<host>:8080/dashboard/)
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      - traefik
+
+networks:
+  traefik:
+    name: dev_traefik
+    external: true
