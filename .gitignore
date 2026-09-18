@@ -15,7 +15,9 @@
 */app/
 
 # --- Dumps / imports (données réelles, volumineux) — on ignore TOUT db/import
+# …mais on GARDE le dossier vide grâce au .gitkeep (structure présente dans le dépôt)
 */db/import/*
+!*/db/import/.gitkeep
 *.bak
 
 # --- Thèmes / archives (volumineux, hors dépôt applicatif) ------------------
