@@ -115,6 +115,7 @@ APP_URL=$APP_URL
 LOG_CHANNEL=stack
 LOG_DEPRECATIONS_CHANNEL=null
 LOG_LEVEL=debug
+DEBUGBAR_ENABLED=true
 
 DB_CONNECTION=mysql
 DB_HOST=odc_db
@@ -135,13 +136,12 @@ REDIS_HOST=127.0.0.1
 REDIS_PASSWORD=null
 REDIS_PORT=6379
 
-# Mail : "log" en dev -> aucun envoi réel (mails écrits dans laravel.log)
 MAIL_MAILER=log
 MAIL_HOST=127.0.0.1
 MAIL_PORT=1025
-MAIL_FROM_ADDRESS="ODC@innosys.fr"
-MAIL_FROM_NAME="Oeuvre des Campagnes (DEV)"
-MAIL_DEV="mvolet@innosys.fr"
+MAIL_FROM_ADDRESS=ODC@innosys.fr
+MAIL_FROM_NAME=Oeuvre des Campagnes (DEV)
+MAIL_DEV=mvolet@innosys.fr
 
 PUSHER_APP_ID=
 PUSHER_APP_KEY=
@@ -151,14 +151,21 @@ PUSHER_PORT=443
 PUSHER_SCHEME=https
 PUSHER_APP_CLUSTER=mt1
 
+VITE_PUSHER_APP_KEY=
+VITE_PUSHER_HOST=
+VITE_PUSHER_PORT=443
+VITE_PUSHER_SCHEME=https
+VITE_PUSHER_APP_CLUSTER=mt1
 ROLLBAR_TOKEN=37159b27b0c94eb09249cd485a32da77
+
 MAX_FILE_UPLOAD=300
 DEFAULTPWD="$defpwd"
+SESSION_SECURE_COOKIE=true
 
-QBO_CLIENT_ID="$qid"
-QBO_CLIENT_SECRET="$qsec"
-QBO_SANDBOX="true"
-QBO_REDIRECT_URL="https://developer.intuit.com/v2/OAuth2Playground/RedirectUrl"
+QBO_CLIENT_ID=$qid
+QBO_CLIENT_SECRET=$qsec
+QBO_SANDBOX=true
+QBO_REDIRECT_URL=https://developer.intuit.com/v2/OAuth2Playground/RedirectUrl
 EOF
 
   # auth.json (Backpack http-basic + github-oauth) pour composer
