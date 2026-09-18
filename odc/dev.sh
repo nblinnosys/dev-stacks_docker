@@ -140,7 +140,7 @@ MAIL_MAILER=log
 MAIL_HOST=127.0.0.1
 MAIL_PORT=1025
 MAIL_FROM_ADDRESS=ODC@innosys.fr
-MAIL_FROM_NAME=Oeuvre des Campagnes (DEV)
+MAIL_FROM_NAME="Oeuvre des Campagnes (DEV)"
 MAIL_DEV=mvolet@innosys.fr
 
 PUSHER_APP_ID=
