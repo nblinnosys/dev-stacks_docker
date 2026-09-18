@@ -107,7 +107,7 @@ EOF
   # .env Laravel (dans le clone, bind-monté)
   cat > "$APP_DIR/.env" <<EOF
 APP_NAME="Oeuvre des Campagnes (DEV)"
-APP_ENV=local
+APP_ENV=dev
 APP_KEY=$appkey
 APP_DEBUG=true
 APP_URL=$APP_URL
@@ -141,7 +141,7 @@ MAIL_HOST=127.0.0.1
 MAIL_PORT=1025
 MAIL_FROM_ADDRESS="ODC@innosys.fr"
 MAIL_FROM_NAME="Oeuvre des Campagnes (DEV)"
-MAIL_DEV="dev@innosys.fr"
+MAIL_DEV="marek@innosys.fr"
 
 PUSHER_APP_ID=
 PUSHER_APP_KEY=
